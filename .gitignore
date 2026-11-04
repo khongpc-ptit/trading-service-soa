@@ -1,0 +1,42 @@
+*.pid
+*.gz
+*.swp
+
+pids
+logs
+results
+tmp
+
+# Build
+dist/**/*
+
+# Coverage reports
+coverage
+
+# API keys and secrets
+.env
+
+# Keys directory (contains JWT public key etc.)
+keys/
+
+# Dependency directory
+node_modules
+bower_components
+
+# Editors
+.idea
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# ignore lock files
+yarn.lock
+package-lock.json
+
+.vscode
+
+#folder sample
+/sample/
+/dist/

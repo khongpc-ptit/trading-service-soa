@@ -1,0 +1,53 @@
+{
+  "name": "trading-service",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "npx nodemon",
+    "build": "rimraf ./dist && tsc && tsc-alias",
+    "start": "node --env-file=.env dist/index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prettier": "prettier --check .",
+    "prettier:fix": "prettier --write .",
+    "test": "ts-node -r module-alias/register src/modules/listing/usecase/listing.usecase.test.ts && ts-node -r module-alias/register src/share/middleware/auth.test.ts && ts-node -r module-alias/register src/share/repository/repo-prisma.test.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "Trading Service - Agriculture Management Platform",
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/module-alias": "^2.0.4",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.7.2",
+    "@types/pg": "^8.23.1",
+    "@types/uuid": "^10.0.0",
+    "nodemon": "^3.1.7",
+    "prisma": "^7.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "express": "^5.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "kafkajs": "^2.2.4",
+    "module-alias": "^2.2.3",
+    "morgan": "^1.10.0",
+    "pg": "^8.23.1",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
+  },
+  "_moduleAliases": {
+    "@root": ".",
+    "@modules": "src/modules",
+    "@share": "src/share"
+  }
+}

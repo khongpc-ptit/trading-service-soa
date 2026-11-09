@@ -40,3 +40,4 @@ package-lock.json
 #folder sample
 /sample/
 /dist/
+/doc/

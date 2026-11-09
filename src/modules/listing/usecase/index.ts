@@ -1,9 +1,12 @@
+import { AppError } from "@share/app-error";
 import { PagingDTO, PagingResponse } from "@share/model/paging";
 import {
   CreateListingDTO,
+  DepositCommitResult,
   ListingCondDTO,
   ListingResponseDTO,
 } from "../model";
+import { ErrListingAlreadyCommitted } from "../model/error";
 import {
   IFarmingRpc,
   IListingRepository,
@@ -22,6 +25,7 @@ export * from "./list-listing";
  * Composes individual Command and Query handlers.
  */
 export class ListingUseCase implements IListingUseCase {
+  private readonly repository: IListingRepository;
   private readonly createCmdHandler: CreateNewListingCmdHandler;
   private readonly getDetailQueryHandler: GetListingDetailQueryHandler;
   private readonly listQueryHandler: ListListingQueryHandler;
@@ -30,6 +34,7 @@ export class ListingUseCase implements IListingUseCase {
     repository: IListingRepository,
     farmingRpc: IFarmingRpc,
   ) {
+    this.repository = repository;
     this.createCmdHandler = new CreateNewListingCmdHandler(
       repository,
       farmingRpc,
@@ -54,5 +59,32 @@ export class ListingUseCase implements IListingUseCase {
     paging: PagingDTO,
   ): Promise<PagingResponse<ListingResponseDTO>> {
     return this.listQueryHandler.query({ cond, paging });
+  }
+
+  async depositCommit(
+    offerId: string,
+    contractId: string,
+    paymentTrackingId: string,
+    depositAmount: string,
+  ): Promise<DepositCommitResult> {
+    const result = await this.repository.tryCommitDeposit(
+      offerId,
+      contractId,
+      paymentTrackingId,
+      depositAmount,
+    );
+    if (result === "already_committed") {
+      throw AppError.from(ErrListingAlreadyCommitted, 409)
+        .withCode("LISTING_ALREADY_COMMITTED")
+        .withLog("Another trader has already committed a deposit for this listing");
+    }
+    return result;
+  }
+
+  async getCommitResult(
+    listingId: string,
+    offerId?: string,
+  ): Promise<DepositCommitResult | null> {
+    return this.repository.getCommitResult(listingId, offerId);
   }
 }

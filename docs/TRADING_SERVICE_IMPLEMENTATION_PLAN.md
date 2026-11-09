@@ -606,11 +606,11 @@ Verify: Trader creates Offer; Farmer accepts; status transitions correct
 Verify: Offer created → outbox row → relay publishes to Kafka
 
 ### Phase 7 — Internal deposit-commit API
-- [ ] 7.1 share/middleware/service-key.ts (validate X-Service-Key)
-- [ ] 7.2 PrismaListingRepository.tryCommitDeposit (SELECT FOR UPDATE)
-- [ ] 7.3 PrismaListingRepository.getCommitResult
-- [ ] 7.4 ListingUseCase.depositCommit (idempotency logic)
-- [ ] 7.5 OfferHTTPService internal routes (POST + GET deposit-commit)
+- [x] 7.1 share/middleware/service-key.ts (validate X-Service-Key)
+- [x] 7.2 PrismaListingRepository.tryCommitDeposit (SELECT FOR UPDATE)
+- [x] 7.3 PrismaListingRepository.getCommitResult
+- [x] 7.4 ListingUseCase.depositCommit (idempotency logic)
+- [x] 7.5 OfferHTTPService internal routes (POST + GET deposit-commit)
 
 Verify: Two simultaneous calls → only one wins (409 for second); same key → idempotent result
 

@@ -75,3 +75,23 @@ export function toOfferResponseDTO(offer: Offer): OfferResponseDTO {
   };
 }
 
+// ─── Deposit-Commit DTOs (BA-SOA §6) ─────────────────────
+
+export const DepositCommitDTOSchema = z.object({
+  contractId: z.string().uuid({ message: "contractId must be a valid UUID" }),
+  paymentTrackingId: z.string().uuid({ message: "paymentTrackingId must be a valid UUID" }),
+  depositAmount: z
+    .string()
+    .regex(/^\d+(\.\d{1,2})?$/, "depositAmount must be a positive decimal string (e.g. '100000.00')"),
+  currency: z.string().optional(),
+});
+
+export type DepositCommitDTO = z.infer<typeof DepositCommitDTOSchema>;
+
+export const GetDepositCommitQueryDTOSchema = z.object({
+  contractId: z.string().uuid({ message: "contractId must be a valid UUID" }),
+  paymentTrackingId: z.string().uuid({ message: "paymentTrackingId must be a valid UUID" }),
+});
+
+export type GetDepositCommitQueryDTO = z.infer<typeof GetDepositCommitQueryDTOSchema>;
+

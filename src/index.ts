@@ -11,7 +11,7 @@ import { setupMiddlewares } from '@share/middleware';
 import { TokenIntrospectRPCClient } from '@share/repository/verify-token.rpc';
 import { ServiceContext } from '@share/interface/service-context';
 import { setupListingHexagon } from '@modules/listing';
-import { setupOfferHexagon } from '@modules/offer';
+import { setupInternalOfferHexagon, setupOfferHexagon } from '@modules/offer';
 import { PrismaOutboxRepository } from '@share/outbox/repository';
 import { KafkaProducerClient } from '@share/component/kafka';
 import { OutboxRelay } from '@share/outbox/relay';
@@ -67,9 +67,16 @@ dotenvConfig();
   app.use('/api/v1', setupListingHexagon(prisma, sctx));
   app.use('/api/v1', setupOfferHexagon(prisma, sctx, outboxRepository));
 
-  // TODO (Phase 7): app.use('/internal/v1', setupInternalRoutes(prisma, sctx));
+  // 7. Mount internal routes (protected by X-Service-Key for Payment service)
+  app.use(
+    '/internal/v1',
+    setupInternalOfferHexagon(
+      prisma,
+      sctx.mdlFactory.serviceKey([config.serviceKeys.payment]),
+    ),
+  );
 
-  // 7. Global error handler (same pattern as sample)
+  // 8. Global error handler (same pattern as sample)
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     responseErr(err, req, res);
   });

@@ -1,6 +1,8 @@
 import { PagingDTO, PagingResponse } from "@share/model/paging";
+import { DepositCommitResult } from "@modules/listing/model";
 import {
   CreateOfferDTO,
+  DepositCommitDTO,
   Offer,
   OfferCondDTO,
   OfferResponseDTO,
@@ -46,6 +48,18 @@ export interface ListOfferQuery {
   requesterRole?: string;
 }
 
+export interface DepositCommitCommand {
+  offerId: string;
+  idempotencyKey?: string;
+  dto: DepositCommitDTO;
+}
+
+export interface GetDepositCommitQuery {
+  offerId: string;
+  contractId: string;
+  paymentTrackingId: string;
+}
+
 // ─── Use-Case Port ──────────────────────────────────────
 
 export interface IOfferUseCase {
@@ -71,5 +85,17 @@ export interface IOfferUseCase {
     requesterId: string,
     requesterRole?: string,
   ): Promise<PagingResponse<OfferResponseDTO>>;
+
+  depositCommit(
+    offerId: string,
+    dto: DepositCommitDTO,
+    idempotencyKey?: string,
+  ): Promise<DepositCommitResult>;
+
+  getDepositCommit(
+    offerId: string,
+    contractId: string,
+    paymentTrackingId: string,
+  ): Promise<DepositCommitResult>;
 }
 

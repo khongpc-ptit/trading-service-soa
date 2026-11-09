@@ -30,7 +30,7 @@ export interface IListingRepository {
   ): Promise<DepositCommitResult | 'already_committed'>;
 
   /** Recovery: read existing commit result. */
-  getCommitResult(listingId: string): Promise<DepositCommitResult | null>;
+  getCommitResult(listingId: string, offerId?: string): Promise<DepositCommitResult | null>;
 
   /** Kafka consumer: set listing SOLD if winningContractId matches. */
   markSold(listingId: string, winningContractId: string): Promise<boolean>;
@@ -69,4 +69,15 @@ export interface IListingUseCase {
 
   /** List listings with filter/paging (GPS feed for Traders). */
   listListings(cond: ListingCondDTO, paging: PagingDTO): Promise<PagingResponse<ListingResponseDTO>>;
+
+  /** Deposit commit (idempotency logic). */
+  depositCommit(
+    offerId: string,
+    contractId: string,
+    paymentTrackingId: string,
+    depositAmount: string,
+  ): Promise<DepositCommitResult>;
+
+  /** Recovery: read existing commit result. */
+  getCommitResult(listingId: string, offerId?: string): Promise<DepositCommitResult | null>;
 }

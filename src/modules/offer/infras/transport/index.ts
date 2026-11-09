@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response, Router } from "express";
+import { Handler, NextFunction, Request, Response, Router } from "express";
 import { AppError, ErrInvalidRequest } from "@share/app-error";
 import {
   ICommandHandler,
@@ -16,6 +16,8 @@ import {
 import {
   AcceptOfferCommand,
   CreateOfferCommand,
+  DepositCommitCommand,
+  GetDepositCommitQuery,
   GetOfferDetailQuery,
   ListOfferQuery,
 } from "@modules/offer/interface";
@@ -23,6 +25,7 @@ import {
   OfferCondDTOSchema,
   OfferResponseDTO,
 } from "@modules/offer/model";
+import { DepositCommitResult } from "@modules/listing/model";
 
 /**
  * Offer HTTP transport (adapter).
@@ -46,6 +49,14 @@ export class OfferHTTPService {
     private readonly listQueryHandler: IQueryHandler<
       ListOfferQuery,
       PagingResponse<OfferResponseDTO>
+    >,
+    private readonly depositCommitCmdHandler?: ICommandHandler<
+      DepositCommitCommand,
+      DepositCommitResult
+    >,
+    private readonly getDepositCommitQueryHandler?: IQueryHandler<
+      GetDepositCommitQuery,
+      DepositCommitResult
     >,
   ) {}
 
@@ -152,6 +163,105 @@ export class OfferHTTPService {
       next(error);
     }
   }
+
+  /**
+   * POST /internal/v1/offers/:offerId/deposit-commit
+   * Auth: X-Service-Key (Payment service)
+   */
+  async depositCommitAPI(req: Request, res: Response, next: NextFunction) {
+    try {
+      const offerId = Array.isArray(req.params.offerId)
+        ? req.params.offerId[0]
+        : req.params.offerId;
+      if (!offerId) {
+        throw AppError.from(ErrInvalidRequest, 400)
+          .withCode("VALIDATION_ERROR")
+          .withLog("offerId is required");
+      }
+
+      const idempotencyKey = req.headers["idempotency-key"] as string | undefined;
+
+      const cmd: DepositCommitCommand = {
+        offerId,
+        idempotencyKey,
+        dto: req.body,
+      };
+
+      if (!this.depositCommitCmdHandler) {
+        throw new Error("depositCommitCmdHandler not injected");
+      }
+
+      const result = await this.depositCommitCmdHandler.execute(cmd);
+      sendOk(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /internal/v1/offers/:offerId/deposit-commit?contractId=...&paymentTrackingId=...
+   * Auth: X-Service-Key (Payment service)
+   */
+  async getDepositCommitAPI(req: Request, res: Response, next: NextFunction) {
+    try {
+      const offerId = Array.isArray(req.params.offerId)
+        ? req.params.offerId[0]
+        : req.params.offerId;
+      if (!offerId) {
+        throw AppError.from(ErrInvalidRequest, 400)
+          .withCode("VALIDATION_ERROR")
+          .withLog("offerId is required");
+      }
+
+      const contractId = req.query.contractId as string;
+      const paymentTrackingId = req.query.paymentTrackingId as string;
+
+      if (!contractId || !paymentTrackingId) {
+        throw AppError.from(ErrInvalidRequest, 400)
+          .withCode("VALIDATION_ERROR")
+          .withLog("contractId and paymentTrackingId query parameters are required");
+      }
+
+      if (!this.getDepositCommitQueryHandler) {
+        throw new Error("getDepositCommitQueryHandler not injected");
+      }
+
+      const result = await this.getDepositCommitQueryHandler.query({
+        offerId,
+        contractId,
+        paymentTrackingId,
+      });
+      sendOk(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+/**
+ * Wire internal offer routes (/internal/v1/offers/**) — protected by X-Service-Key.
+ */
+export function setupInternalOfferRoutes(
+  httpService: OfferHTTPService,
+  serviceKeyMiddleware: Handler,
+): Router {
+  const router = Router();
+
+  // POST /offers/:offerId/deposit-commit
+  router.post(
+    "/offers/:offerId/deposit-commit",
+    serviceKeyMiddleware,
+    httpService.depositCommitAPI.bind(httpService),
+  );
+
+  // GET /offers/:offerId/deposit-commit
+  router.get(
+    "/offers/:offerId/deposit-commit",
+    serviceKeyMiddleware,
+    httpService.getDepositCommitAPI.bind(httpService),
+  );
+
+  return router;
 }
 
 /**

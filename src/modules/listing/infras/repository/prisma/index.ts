@@ -1,4 +1,5 @@
 import { PrismaClient, Listing as PrismaListing, Prisma } from "@prisma/client";
+import { AppError } from "@share/app-error";
 import { PagingDTO } from "@share/model/paging";
 import { IListingRepository } from "@modules/listing/interface";
 import {
@@ -7,6 +8,8 @@ import {
   ListingCondDTO,
   ListingStatus,
 } from "@modules/listing/model";
+import { ErrListingNotFound } from "@modules/listing/model/error";
+import { ErrOfferNotAccepted, ErrOfferNotFound } from "@modules/offer/model/error";
 
 interface RawListingRow {
   listing_id: string;
@@ -94,10 +97,16 @@ export class PrismaListingRepository implements IListingRepository {
       // 1. Get offer to find listingId (Trading derives listingId from offerId — BR-TS-011)
       const offer = await tx.offer.findUnique({
         where: { offerId },
-        select: { listingId: true },
+        select: { listingId: true, status: true },
       });
 
-      if (!offer) throw new Error('Offer not found');
+      if (!offer) {
+        throw AppError.from(ErrOfferNotFound, 404).withCode('OFFER_NOT_FOUND');
+      }
+
+      if (offer.status !== 'ACCEPTED') {
+        throw AppError.from(ErrOfferNotAccepted, 409).withCode('OFFER_NOT_ACCEPTED');
+      }
 
       // 2. Lock listing row with SELECT FOR UPDATE
       const lockedRows = await tx.$queryRaw<RawListingRow[]>`
@@ -108,30 +117,30 @@ export class PrismaListingRepository implements IListingRepository {
       `;
 
       const listing = lockedRows[0];
-      if (!listing) throw new Error('Listing not found');
+      if (!listing) {
+        throw AppError.from(ErrListingNotFound, 404).withCode('LISTING_NOT_FOUND');
+      }
 
       // 3. Idempotency: same tracking key already committed?
       if (listing.winning_payment_tracking_id === paymentTrackingId) {
-        return {
-          offerId,
-          listingId: listing.listing_id,
-          contractId: listing.winning_contract_id!,
-          paymentTrackingId: listing.winning_payment_tracking_id!,
-          listingStatus: 'LOCKED' as const,
-        };
-      }
-
-      // 4. Already committed by a DIFFERENT key?
-      if (listing.winning_contract_id !== null) {
+        if (listing.winning_contract_id === contractId) {
+          return {
+            offerId,
+            listingId: listing.listing_id,
+            contractId: listing.winning_contract_id,
+            paymentTrackingId: listing.winning_payment_tracking_id,
+            listingStatus: 'LOCKED' as const,
+          };
+        }
         return 'already_committed';
       }
 
-      // 5. Listing must not be SOLD
-      if (listing.status === 'SOLD') {
+      // 4. Already committed by a DIFFERENT key or listing not OPEN?
+      if (listing.winning_contract_id !== null || listing.status !== 'OPEN') {
         return 'already_committed';
       }
 
-      // 6. Atomically set winner + LOCKED
+      // 5. Atomically set winner + LOCKED
       await tx.$executeRaw`
         UPDATE listings SET
           status = 'LOCKED',
@@ -151,7 +160,7 @@ export class PrismaListingRepository implements IListingRepository {
     });
   }
 
-  async getCommitResult(listingId: string): Promise<DepositCommitResult | null> {
+  async getCommitResult(listingId: string, offerId: string = ''): Promise<DepositCommitResult | null> {
     const listing = await this.prisma.listing.findUnique({
       where: { listingId },
       select: {
@@ -167,7 +176,7 @@ export class PrismaListingRepository implements IListingRepository {
     }
 
     return {
-      offerId: '',  // would need join; caller has offerId
+      offerId,
       listingId: listing.listingId,
       contractId: listing.winningContractId,
       paymentTrackingId: listing.winningPaymentTrackingId,

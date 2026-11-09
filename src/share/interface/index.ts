@@ -20,6 +20,10 @@ export interface TokenPayload {
 
 export interface Requester extends TokenPayload {}
 
+export interface ITokenVerifier {
+  verify(token: string): Promise<TokenPayload>;
+}
+
 export interface ITokenIntrospect {
   introspect(token: string): Promise<TokenIntrospectResult>;
 }
@@ -29,6 +33,19 @@ export type TokenIntrospectResult = {
   error?: Error;
   isOk: boolean;
 };
+
+// ─── Access State (BA-SOA §3) ───────────────────────────
+
+export interface AccountAccessState {
+  accountId: string;
+  status: string;
+  role: string;
+  accessAllowed: boolean;
+}
+
+export interface IAccessStateRPC {
+  check(accountId: string): Promise<AccountAccessState>;
+}
 
 // ─── Generic Repository Interfaces ──────────────────────
 

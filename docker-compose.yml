@@ -56,3 +56,4 @@ networks:
   soa-network:
     name: soa-network
     driver: bridge
+

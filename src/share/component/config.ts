@@ -50,6 +50,7 @@ export const config = {
   serviceKeys: {
     payment: process.env.SERVICE_KEY_PAYMENT || '',
     tradingToFarming: process.env.SERVICE_KEY_TRADING_TO_FARMING || '',
+    tradingToUser: process.env.SERVICE_KEY_TRADING_TO_USER || '',
   },
 
   nodeEnv: process.env.NODE_ENV || 'development',

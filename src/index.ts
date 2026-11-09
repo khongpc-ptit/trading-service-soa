@@ -8,7 +8,8 @@ import { responseErr } from '@share/app-error';
 import { config } from '@share/component/config';
 import { prisma, pool } from '@share/component/prisma';
 import { setupMiddlewares } from '@share/middleware';
-import { TokenIntrospectRPCClient } from '@share/repository/verify-token.rpc';
+import { JWTVerifier } from '@share/component/jwt';
+import { AccessStateRPCClient } from '@share/repository/access-state.rpc';
 import { ServiceContext } from '@share/interface/service-context';
 import { setupListingHexagon } from '@modules/listing';
 import { setupInternalOfferHexagon, setupOfferHexagon } from '@modules/offer';
@@ -62,10 +63,15 @@ dotenvConfig();
   app.use(express.json());
   app.use(morgan('dev'));
 
-  // 4. Setup middleware factory with User Service token introspector
-  const introspector = new TokenIntrospectRPCClient(config.verifyTokenUrl);
+  // 5. Setup middleware factory with RS256 JWT verifier & Access-State RPC (Phase 9)
+  const jwtVerifier = new JWTVerifier();
+  const accessStateRpc = new AccessStateRPCClient(
+    config.services.userUrl,
+    config.serviceKeys.tradingToUser,
+    config.accessStateTimeoutMs,
+  );
   const sctx: ServiceContext = {
-    mdlFactory: setupMiddlewares(introspector),
+    mdlFactory: setupMiddlewares(jwtVerifier, accessStateRpc),
   };
 
   // 5. Health check (no auth required)

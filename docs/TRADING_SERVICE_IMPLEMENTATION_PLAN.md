@@ -622,11 +622,11 @@ Verify: Two simultaneous calls → only one wins (409 for second); same key → 
 Verify: DEPOSIT_PAID updates amount; COMPLETED → SOLD; late event → no state change
 
 ### Phase 9 — Auth Middleware Integration
-- [ ] 9.1 auth.ts: RS256 public-key JWT verify
-- [ ] 9.2 After verify: call AccessStateRpcClient.check(sub), 1s timeout
-- [ ] 9.3 LOCKED/INACTIVE/UNVERIFIED → 403; timeout → 503
-- [ ] 9.4 Ownership checks (farmerId from sub, not body)
-- [ ] 9.5 Integrate setupMiddlewares into all module routers
+- [x] 9.1 auth.ts: RS256 public-key JWT verify
+- [x] 9.2 After verify: call AccessStateRpcClient.check(sub), 1s timeout
+- [x] 9.3 LOCKED/INACTIVE/UNVERIFIED → 403; timeout → 503
+- [x] 9.4 Ownership checks (farmerId from sub, not body)
+- [x] 9.5 Integrate setupMiddlewares into all module routers
 
 Verify: Locked account blocked; wrong role rejected; expired token rejected
 

@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --fix",
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
-    "test": "ts-node -r module-alias/register src/modules/listing/usecase/listing.usecase.test.ts && ts-node -r module-alias/register src/share/middleware/auth.test.ts && ts-node -r module-alias/register src/share/repository/repo-prisma.test.ts",
+    "test": "ts-node -r module-alias/register src/modules/listing/usecase/listing.usecase.test.ts && ts-node -r module-alias/register src/share/middleware/auth.test.ts && ts-node -r module-alias/register src/share/repository/repo-prisma.test.ts && ts-node -r module-alias/register src/modules/offer/usecase/offer.usecase.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"

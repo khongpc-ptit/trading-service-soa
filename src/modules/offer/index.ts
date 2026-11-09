@@ -1,14 +1,20 @@
 import { PrismaClient } from "@prisma/client";
 import { ServiceContext } from "@share/interface/service-context";
-import { Router } from "express";
+import { Handler, Router } from "express";
 import { PrismaListingRepository } from "@modules/listing/infras/repository/prisma";
 import { PrismaOutboxRepository } from "@share/outbox/repository";
 import { IOutboxRepository } from "@share/outbox/interface";
 import { PrismaOfferRepository } from "./infras/repository/prisma";
-import { OfferHTTPService, setupOfferRoutes } from "./infras/transport";
+import {
+  OfferHTTPService,
+  setupInternalOfferRoutes,
+  setupOfferRoutes,
+} from "./infras/transport";
 import {
   AcceptOfferCmdHandler,
   CreateOfferCmdHandler,
+  DepositCommitCmdHandler,
+  GetDepositCommitQueryHandler,
   GetOfferDetailQueryHandler,
   ListOfferQueryHandler,
 } from "./usecase";
@@ -47,6 +53,14 @@ export const setupOfferHexagon = (
     offerRepository,
   );
   const listQueryHandler = new ListOfferQueryHandler(offerRepository);
+  const depositCommitCmdHandler = new DepositCommitCmdHandler(
+    offerRepository,
+    listingRepository,
+  );
+  const getDepositCommitQueryHandler = new GetDepositCommitQueryHandler(
+    offerRepository,
+    listingRepository,
+  );
 
   // Transport adapter
   const httpService = new OfferHTTPService(
@@ -54,9 +68,43 @@ export const setupOfferHexagon = (
     acceptCmdHandler,
     getDetailQueryHandler,
     listQueryHandler,
+    depositCommitCmdHandler,
+    getDepositCommitQueryHandler,
   );
 
   // Wire routes and return router
   return setupOfferRoutes(httpService, sctx.mdlFactory);
+};
+
+/**
+ * Internal Offer hexagon composition root (/internal/v1/offers/**).
+ * Handles deposit-commit from Payment service, protected by X-Service-Key.
+ */
+export const setupInternalOfferHexagon = (
+  prisma: PrismaClient,
+  serviceKeyMiddleware: Handler,
+): Router => {
+  const offerRepository = new PrismaOfferRepository(prisma);
+  const listingRepository = new PrismaListingRepository(prisma);
+
+  const depositCommitCmdHandler = new DepositCommitCmdHandler(
+    offerRepository,
+    listingRepository,
+  );
+  const getDepositCommitQueryHandler = new GetDepositCommitQueryHandler(
+    offerRepository,
+    listingRepository,
+  );
+
+  const httpService = new OfferHTTPService(
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    depositCommitCmdHandler,
+    getDepositCommitQueryHandler,
+  );
+
+  return setupInternalOfferRoutes(httpService, serviceKeyMiddleware);
 };
 

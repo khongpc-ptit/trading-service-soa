@@ -6,6 +6,10 @@ export const ErrOfferNotPending = new Error(
   "Offer is not in PENDING status",
 );
 
+export const ErrOfferNotAccepted = new Error(
+  "Offer is not in ACCEPTED status",
+);
+
 export const ErrNotParticipant = new Error(
   "You are not a participant of this offer",
 );

@@ -1,5 +1,10 @@
 import { AppError } from "@share/app-error";
 import { ICommandHandler } from "@share/interface";
+import {
+  createOfferAcceptedEnvelope,
+  TOPIC_TRADING_OFFER,
+} from "@share/event";
+import { IOutboxRepository } from "@share/outbox/interface";
 import { IListingRepository } from "@modules/listing/interface";
 import { ListingStatus } from "@modules/listing/model";
 import {
@@ -7,6 +12,7 @@ import {
   IOfferRepository,
 } from "../interface";
 import {
+  Offer,
   OfferResponseDTO,
   OfferStatus,
   toOfferResponseDTO,
@@ -29,6 +35,7 @@ import {
  * - If in invalid state, throw error.
  * - Associated listing must not be SOLD.
  * - Status transitions to ACCEPTED.
+ * - Atomically inserts OFFER_ACCEPTED event into outbox_events table.
  */
 export class AcceptOfferCmdHandler
   implements ICommandHandler<AcceptOfferCommand, OfferResponseDTO>
@@ -36,6 +43,7 @@ export class AcceptOfferCmdHandler
   constructor(
     private readonly offerRepository: IOfferRepository,
     private readonly listingRepository: IListingRepository,
+    private readonly outboxRepository?: IOutboxRepository,
   ) {}
 
   async execute(command: AcceptOfferCommand): Promise<OfferResponseDTO> {
@@ -52,7 +60,7 @@ export class AcceptOfferCmdHandler
       throw AppError.from(ErrNotListingOwner, 403).withCode("FORBIDDEN");
     }
 
-    // 3. Idempotency: already accepted
+    // 3. Idempotency: already accepted (does not re-emit event)
     if (offer.status === OfferStatus.ACCEPTED) {
       return toOfferResponseDTO(offer);
     }
@@ -72,15 +80,41 @@ export class AcceptOfferCmdHandler
       );
     }
 
-    // 6. Update status to ACCEPTED
-    await this.offerRepository.updateStatus(offerId, OfferStatus.ACCEPTED);
-
-    // 7. Return updated DTO
-    return toOfferResponseDTO({
+    const updatedAt = new Date();
+    const updatedOffer: Offer = {
       ...offer,
       status: OfferStatus.ACCEPTED,
-      updatedAt: new Date(),
-    });
+      updatedAt,
+    };
+
+    // 6. Build OFFER_ACCEPTED event envelope (BA-SOA §8 & §10)
+    const envelope = createOfferAcceptedEnvelope(updatedOffer);
+
+    // 7. Update status and insert outbox event atomically
+    if (this.outboxRepository) {
+      await this.offerRepository.runTransaction(async (tx) => {
+        await this.offerRepository.updateStatus(
+          offerId,
+          OfferStatus.ACCEPTED,
+          tx,
+        );
+        await this.outboxRepository!.insert(
+          {
+            eventId: envelope.eventId,
+            eventType: envelope.eventType,
+            topic: TOPIC_TRADING_OFFER,
+            partitionKey: offer.offerId,
+            payload: envelope,
+          },
+          tx,
+        );
+      });
+    } else {
+      await this.offerRepository.updateStatus(offerId, OfferStatus.ACCEPTED);
+    }
+
+    // 8. Return updated DTO
+    return toOfferResponseDTO(updatedOffer);
   }
 }
 

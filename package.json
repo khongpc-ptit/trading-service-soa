@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --fix",
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
-    "test": "ts-node -r module-alias/register src/modules/listing/usecase/listing.usecase.test.ts && ts-node -r module-alias/register src/share/middleware/auth.test.ts && ts-node -r module-alias/register src/share/repository/repo-prisma.test.ts && ts-node -r module-alias/register src/modules/offer/usecase/offer.usecase.test.ts",
+    "test": "ts-node -r module-alias/register src/modules/listing/usecase/listing.usecase.test.ts && ts-node -r module-alias/register src/share/middleware/auth.test.ts && ts-node -r module-alias/register src/share/repository/repo-prisma.test.ts && ts-node -r module-alias/register src/modules/offer/usecase/offer.usecase.test.ts && ts-node -r module-alias/register src/share/outbox/relay.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
@@ -28,7 +28,9 @@
     "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.7",
     "prisma": "^7.10.1",
+    "rimraf": "^6.1.4",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.9.10",
     "typescript": "^5.6.2"
   },
   "dependencies": {

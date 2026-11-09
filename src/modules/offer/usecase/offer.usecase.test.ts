@@ -27,7 +27,7 @@ import {
 class MockOfferRepository implements IOfferRepository {
   public offers: Offer[] = [];
 
-  async insert(offer: Offer): Promise<void> {
+  async insert(offer: Offer, _tx?: any): Promise<void> {
     this.offers.push({ ...offer });
   }
 
@@ -35,7 +35,11 @@ class MockOfferRepository implements IOfferRepository {
     return this.offers.find((o) => o.offerId === offerId) || null;
   }
 
-  async updateStatus(offerId: string, status: OfferStatus): Promise<boolean> {
+  async updateStatus(
+    offerId: string,
+    status: OfferStatus,
+    _tx?: any,
+  ): Promise<boolean> {
     const offer = this.offers.find((o) => o.offerId === offerId);
     if (!offer) return false;
     offer.status = status;
@@ -46,6 +50,7 @@ class MockOfferRepository implements IOfferRepository {
   async updateDepositAmount(
     offerId: string,
     depositAmount: string,
+    _tx?: any,
   ): Promise<boolean> {
     const offer = this.offers.find((o) => o.offerId === offerId);
     if (!offer) return false;
@@ -79,6 +84,10 @@ class MockOfferRepository implements IOfferRepository {
       ),
       total: filtered.length,
     };
+  }
+
+  async runTransaction<T>(work: (tx: any) => Promise<T>): Promise<T> {
+    return work({});
   }
 }
 

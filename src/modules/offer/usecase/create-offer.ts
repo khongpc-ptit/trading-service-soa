@@ -1,5 +1,10 @@
 import { AppError } from "@share/app-error";
 import { ICommandHandler } from "@share/interface";
+import {
+  createOfferCreatedEnvelope,
+  TOPIC_TRADING_OFFER,
+} from "@share/event";
+import { IOutboxRepository } from "@share/outbox/interface";
 import { v7 } from "uuid";
 import { IListingRepository } from "@modules/listing/interface";
 import { ListingStatus } from "@modules/listing/model";
@@ -30,6 +35,7 @@ import {
  * - Associated listing must exist and be in OPEN status.
  * - Farmer cannot make an offer on their own listing.
  * - Starts with status: PENDING, depositAmount: "0.00".
+ * - Atomically inserts OFFER_CREATED event into outbox_events table.
  */
 export class CreateOfferCmdHandler
   implements ICommandHandler<CreateOfferCommand, OfferResponseDTO>
@@ -37,6 +43,7 @@ export class CreateOfferCmdHandler
   constructor(
     private readonly offerRepository: IOfferRepository,
     private readonly listingRepository: IListingRepository,
+    private readonly outboxRepository?: IOutboxRepository,
   ) {}
 
   async execute(command: CreateOfferCommand): Promise<OfferResponseDTO> {
@@ -78,10 +85,29 @@ export class CreateOfferCmdHandler
       updatedAt: now,
     };
 
-    // 6. Persist
-    await this.offerRepository.insert(offer);
+    // 6. Build OFFER_CREATED event envelope (BA-SOA §8 & §10)
+    const envelope = createOfferCreatedEnvelope(offer);
 
-    // 7. Return response DTO
+    // 7. Persist offer and outbox event atomically
+    if (this.outboxRepository) {
+      await this.offerRepository.runTransaction(async (tx) => {
+        await this.offerRepository.insert(offer, tx);
+        await this.outboxRepository!.insert(
+          {
+            eventId: envelope.eventId,
+            eventType: envelope.eventType,
+            topic: TOPIC_TRADING_OFFER,
+            partitionKey: offer.offerId,
+            payload: envelope,
+          },
+          tx,
+        );
+      });
+    } else {
+      await this.offerRepository.insert(offer);
+    }
+
+    // 8. Return response DTO
     return toOfferResponseDTO(offer);
   }
 }

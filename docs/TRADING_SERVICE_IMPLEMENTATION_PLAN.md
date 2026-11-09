@@ -598,10 +598,10 @@ Verify: POST creates Listing; Farming unreachable → 503
 Verify: Trader creates Offer; Farmer accepts; status transitions correct
 
 ### Phase 6 — Transactional Outbox + Kafka Producer
-- [ ] 6.1 insertOutboxEvent(tx, envelope) helper
-- [ ] 6.2 Integrate into createOffer + acceptOffer (same Prisma transaction)
-- [ ] 6.3 Kafka producer (kafkajs) in share/component/kafka.ts
-- [ ] 6.4 Outbox relay: poll unpublished rows → publish → mark published
+- [x] 6.1 insertOutboxEvent(tx, envelope) helper
+- [x] 6.2 Integrate into createOffer + acceptOffer (same Prisma transaction)
+- [x] 6.3 Kafka producer (kafkajs) in share/component/kafka.ts
+- [x] 6.4 Outbox relay: poll unpublished rows → publish → mark published
 
 Verify: Offer created → outbox row → relay publishes to Kafka
 

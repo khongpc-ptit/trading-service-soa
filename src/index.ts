@@ -12,6 +12,9 @@ import { TokenIntrospectRPCClient } from '@share/repository/verify-token.rpc';
 import { ServiceContext } from '@share/interface/service-context';
 import { setupListingHexagon } from '@modules/listing';
 import { setupOfferHexagon } from '@modules/offer';
+import { PrismaOutboxRepository } from '@share/outbox/repository';
+import { KafkaProducerClient } from '@share/component/kafka';
+import { OutboxRelay } from '@share/outbox/relay';
 
 dotenvConfig();
 
@@ -25,43 +28,63 @@ dotenvConfig();
     process.exit(1);
   }
 
-  // 2. Create Express app
+  // 2. Initialize Outbox and Kafka Producer
+  const outboxRepository = new PrismaOutboxRepository(prisma);
+  const kafkaProducer = new KafkaProducerClient();
+  const outboxRelay = new OutboxRelay(outboxRepository, kafkaProducer);
+
+  try {
+    await kafkaProducer.connect();
+    console.log('[kafka] Connected to Kafka successfully.');
+  } catch (error) {
+    console.warn(
+      '[kafka] Kafka broker not available on startup. Outbox relay will retry on demand.',
+      error,
+    );
+  }
+
+  outboxRelay.start();
+
+  // 3. Create Express app
   const app = express();
   const port = config.port;
 
   app.use(express.json());
   app.use(morgan('dev'));
 
-  // 3. Setup middleware factory with User Service token introspector
+  // 4. Setup middleware factory with User Service token introspector
   const introspector = new TokenIntrospectRPCClient(config.verifyTokenUrl);
   const sctx: ServiceContext = {
     mdlFactory: setupMiddlewares(introspector),
   };
 
-  // 4. Health check (no auth required)
+  // 5. Health check (no auth required)
   app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok', service: 'trading-service' });
   });
 
-  // 5. Mount module hexagons
+  // 6. Mount module hexagons
   app.use('/api/v1', setupListingHexagon(prisma, sctx));
-  app.use('/api/v1', setupOfferHexagon(prisma, sctx));
+  app.use('/api/v1', setupOfferHexagon(prisma, sctx, outboxRepository));
 
   // TODO (Phase 7): app.use('/internal/v1', setupInternalRoutes(prisma, sctx));
 
-  // 6. Global error handler (same pattern as sample)
+  // 7. Global error handler (same pattern as sample)
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     responseErr(err, req, res);
   });
 
-  // 7. Start server
-  app.listen(port, () => {
+  // 8. Start server
+  const server = app.listen(port, () => {
     console.log(`[server] Trading Service is running on http://localhost:${port}`);
   });
 
-  // 8. Graceful shutdown
+  // 9. Graceful shutdown
   const shutdown = async () => {
     console.log('[server] Shutting down...');
+    outboxRelay.stop();
+    await kafkaProducer.disconnect();
+    server.close();
     await prisma.$disconnect();
     await pool.end();
     process.exit(0);

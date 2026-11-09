@@ -73,6 +73,22 @@ export const ListingResponseDTOSchema = z.object({
 
 export type ListingResponseDTO = z.infer<typeof ListingResponseDTOSchema>;
 
+export function toListingResponseDTO(listing: Listing): ListingResponseDTO {
+  return {
+    listingId:      listing.listingId,
+    farmerId:       listing.farmerId,
+    plotId:         listing.plotId,
+    cropSeasonId:   listing.cropSeasonId,
+    seedType:       listing.seedType,
+    estimatedYield: listing.estimatedYield,
+    area:           listing.area,
+    latitude:       listing.latitude,
+    longitude:      listing.longitude,
+    expectedPrice:  listing.expectedPrice,
+    status:         listing.status,
+  };
+}
+
 // ─── Farming snapshot response (BA-SOA §7) ───────────────
 
 export interface FarmingSnapshotDTO {

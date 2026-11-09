@@ -1,6 +1,11 @@
 import test, { describe, it } from "node:test";
 import assert from "node:assert";
-import { ListingUseCase } from "./index";
+import {
+  CreateNewListingCmdHandler,
+  GetListingDetailQueryHandler,
+  ListingUseCase,
+  ListListingQueryHandler,
+} from "./index";
 import { IListingRepository, IFarmingRpc } from "../interface";
 import {
   CreateListingDTO,
@@ -204,6 +209,51 @@ describe("ListingUseCase", () => {
         return true;
       }
     );
+  });
+
+  it("individual handlers execute commands and queries correctly (sample/brand pattern)", async () => {
+    const repo = new MockListingRepository();
+    const farming = new MockFarmingRpc();
+    farming.snapshotToReturn = {
+      plotId,
+      farmerId,
+      area: 3.0,
+      latitude: 10.5,
+      longitude: 106.5,
+      currentSeason: {
+        cropSeasonId,
+        cropType: "Jasmine Rice",
+        expectedYield: 20.0,
+      },
+    };
+
+    const createHandler = new CreateNewListingCmdHandler(repo, farming);
+    const getHandler = new GetListingDetailQueryHandler(repo);
+    const listHandler = new ListListingQueryHandler(repo);
+
+    // 1. Create handler
+    const created = await createHandler.execute({
+      farmerId,
+      dto: {
+        plotId,
+        cropSeasonId,
+        expectedPrice: "5000000.00",
+      },
+    });
+    assert.strictEqual(created.seedType, "Jasmine Rice");
+    assert.strictEqual(created.expectedPrice, "5000000.00");
+
+    // 2. Get handler
+    const detail = await getHandler.query({ listingId: created.listingId });
+    assert.strictEqual(detail.listingId, created.listingId);
+
+    // 3. List handler
+    const listResult = await listHandler.query({
+      cond: { farmerId },
+      paging: { page: 0, size: 10 },
+    });
+    assert.strictEqual(listResult.items.length, 1);
+    assert.strictEqual(listResult.totalElements, 1);
   });
 });
 

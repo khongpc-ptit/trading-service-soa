@@ -42,6 +42,22 @@ export interface IFarmingRpc {
   getPlotSummary(plotId: string, cropSeasonId: string): Promise<FarmingSnapshotDTO>;
 }
 
+// ─── CQRS Command & Query Shapes (from sample/brand) ────
+
+export interface CreateListingCommand {
+  farmerId: string;
+  dto: CreateListingDTO;
+}
+
+export interface GetListingDetailQuery {
+  listingId: string;
+}
+
+export interface ListListingQuery {
+  cond: ListingCondDTO;
+  paging: PagingDTO;
+}
+
 // ─── Use-Case Port ──────────────────────────────────────
 
 export interface IListingUseCase {

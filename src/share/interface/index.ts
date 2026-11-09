@@ -47,3 +47,14 @@ export interface ICommandRepository<Entity, UpdateDTO> {
   update(id: string, data: UpdateDTO): Promise<boolean>;
   delete(id: string, isHard: boolean): Promise<boolean>;
 }
+
+// ─── CQRS Handlers (from sample/brand) ──────────────────
+
+export interface ICommandHandler<Cmd, Result> {
+  execute(command: Cmd): Promise<Result>;
+}
+
+export interface IQueryHandler<Query, Result> {
+  query(query: Query): Promise<Result>;
+}
+

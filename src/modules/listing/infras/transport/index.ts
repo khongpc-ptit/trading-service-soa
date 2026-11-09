@@ -1,19 +1,48 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { AppError, ErrInvalidRequest } from "@share/app-error";
-import { Requester, UserRole } from "@share/interface";
+import {
+  ICommandHandler,
+  IQueryHandler,
+  Requester,
+  UserRole,
+} from "@share/interface";
 import { MdlFactory } from "@share/interface/service-context";
-import { PagingDTOSchema } from "@share/model/paging";
-import { sendCreated, sendPagingResponse, sendOk } from "@share/transport/http-server";
-import { IListingUseCase } from "@modules/listing/interface";
-import { ListingCondDTOSchema } from "@modules/listing/model";
+import { PagingDTOSchema, PagingResponse } from "@share/model/paging";
+import {
+  sendCreated,
+  sendPagingResponse,
+  sendOk,
+} from "@share/transport/http-server";
+import {
+  CreateListingCommand,
+  GetListingDetailQuery,
+  ListListingQuery,
+} from "@modules/listing/interface";
+import {
+  ListingCondDTOSchema,
+  ListingResponseDTO,
+} from "@modules/listing/model";
 
 /**
  * Listing HTTP transport (adapter).
- * Follows sample's pattern: methods bound to Express routes.
+ * Follows sample/brand's CQRS pattern: handlers injected individually.
  * Controller contains NO business logic (RULE-008).
  */
 export class ListingHTTPService {
-  constructor(private readonly useCase: IListingUseCase) {}
+  constructor(
+    private readonly createCmdHandler: ICommandHandler<
+      CreateListingCommand,
+      ListingResponseDTO
+    >,
+    private readonly getDetailQueryHandler: IQueryHandler<
+      GetListingDetailQuery,
+      ListingResponseDTO
+    >,
+    private readonly listQueryHandler: IQueryHandler<
+      ListListingQuery,
+      PagingResponse<ListingResponseDTO>
+    >,
+  ) {}
 
   /**
    * POST /api/v1/listings
@@ -24,7 +53,11 @@ export class ListingHTTPService {
   async createListingAPI(req: Request, res: Response, next: NextFunction) {
     try {
       const requester = res.locals.requester as Requester;
-      const result = await this.useCase.createListing(requester.sub, req.body);
+      const cmd: CreateListingCommand = {
+        farmerId: requester.sub,
+        dto: req.body,
+      };
+      const result = await this.createCmdHandler.execute(cmd);
       sendCreated(res, result);
     } catch (error) {
       next(error);
@@ -36,11 +69,15 @@ export class ListingHTTPService {
    */
   async getListingAPI(req: Request, res: Response, next: NextFunction) {
     try {
-      const listingId = Array.isArray(req.params.listingId) ? req.params.listingId[0] : req.params.listingId;
+      const listingId = Array.isArray(req.params.listingId)
+        ? req.params.listingId[0]
+        : req.params.listingId;
       if (!listingId) {
-        throw AppError.from(ErrInvalidRequest, 400).withCode('VALIDATION_ERROR').withLog('listingId is required');
+        throw AppError.from(ErrInvalidRequest, 400)
+          .withCode("VALIDATION_ERROR")
+          .withLog("listingId is required");
       }
-      const result = await this.useCase.getListing(listingId);
+      const result = await this.getDetailQueryHandler.query({ listingId });
       sendOk(res, result);
     } catch (error) {
       next(error);
@@ -57,15 +94,18 @@ export class ListingHTTPService {
       const pagingResult = PagingDTOSchema.safeParse(req.query);
       if (!pagingResult.success) {
         throw AppError.from(ErrInvalidRequest, 400)
-          .withCode('VALIDATION_ERROR')
-          .withLog('Invalid paging parameters');
+          .withCode("VALIDATION_ERROR")
+          .withLog("Invalid paging parameters");
       }
 
       // Parse filter conditions
       const condResult = ListingCondDTOSchema.safeParse(req.query);
       const cond = condResult.success ? condResult.data : {};
 
-      const result = await this.useCase.listListings(cond, pagingResult.data);
+      const result = await this.listQueryHandler.query({
+        cond,
+        paging: pagingResult.data,
+      });
       sendPagingResponse(res, result);
     } catch (error) {
       next(error);
@@ -86,7 +126,7 @@ export function setupListingRoutes(
 
   // POST /api/v1/listings — FARMER only
   router.post(
-    '/listings',
+    "/listings",
     mdlFactory.auth,
     farmerOnly,
     httpService.createListingAPI.bind(httpService),
@@ -94,14 +134,14 @@ export function setupListingRoutes(
 
   // GET /api/v1/listings — any authenticated user
   router.get(
-    '/listings',
+    "/listings",
     mdlFactory.auth,
     httpService.listListingsAPI.bind(httpService),
   );
 
   // GET /api/v1/listings/:listingId — any authenticated user
   router.get(
-    '/listings/:listingId',
+    "/listings/:listingId",
     mdlFactory.auth,
     httpService.getListingAPI.bind(httpService),
   );

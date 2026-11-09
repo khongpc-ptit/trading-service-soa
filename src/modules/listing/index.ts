@@ -4,14 +4,18 @@ import { Router } from "express";
 import { PrismaListingRepository } from "./infras/repository/prisma";
 import { FarmingRpcClient } from "./infras/rpc/farming.rpc";
 import { ListingHTTPService, setupListingRoutes } from "./infras/transport";
-import { ListingUseCase } from "./usecase";
+import {
+  CreateNewListingCmdHandler,
+  GetListingDetailQueryHandler,
+  ListListingQueryHandler,
+} from "./usecase";
 
 /**
  * Listing hexagon composition root.
- * Follows sample's setupXxxHexagon(db, sctx) pattern:
+ * Follows sample/brand setupBrandHexagon pattern:
  *   1. Create infrastructure adapters (repo, rpc)
- *   2. Inject into use case
- *   3. Inject use case into HTTP service
+ *   2. Instantiate individual Command & Query handlers
+ *   3. Inject handlers into HTTP service
  *   4. Wire routes
  *   5. Return router
  */
@@ -23,11 +27,20 @@ export const setupListingHexagon = (
   const repository = new PrismaListingRepository(prisma);
   const farmingRpc = new FarmingRpcClient();
 
-  // Application layer
-  const useCase = new ListingUseCase(repository, farmingRpc);
+  // Command & Query handlers (following sample/brand)
+  const createCmdHandler = new CreateNewListingCmdHandler(
+    repository,
+    farmingRpc,
+  );
+  const getDetailQueryHandler = new GetListingDetailQueryHandler(repository);
+  const listQueryHandler = new ListListingQueryHandler(repository);
 
   // Transport adapter
-  const httpService = new ListingHTTPService(useCase);
+  const httpService = new ListingHTTPService(
+    createCmdHandler,
+    getDetailQueryHandler,
+    listQueryHandler,
+  );
 
   // Wire routes and return router
   return setupListingRoutes(httpService, sctx.mdlFactory);

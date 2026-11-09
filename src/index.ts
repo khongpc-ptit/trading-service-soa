@@ -12,6 +12,8 @@ import { TokenIntrospectRPCClient } from '@share/repository/verify-token.rpc';
 import { ServiceContext } from '@share/interface/service-context';
 import { setupListingHexagon } from '@modules/listing';
 import { setupInternalOfferHexagon, setupOfferHexagon } from '@modules/offer';
+import { setupUserReplicaHexagon } from '@modules/user-replica';
+import { setupKafkaConsumersHexagon } from '@modules/event';
 import { PrismaOutboxRepository } from '@share/outbox/repository';
 import { KafkaProducerClient } from '@share/component/kafka';
 import { OutboxRelay } from '@share/outbox/relay';
@@ -45,7 +47,15 @@ dotenvConfig();
 
   outboxRelay.start();
 
-  // 3. Create Express app
+  // 3. Initialize User Replica & Kafka Consumers (Phase 8)
+  const userReplicaHexagon = setupUserReplicaHexagon(prisma);
+  const kafkaConsumersHexagon = setupKafkaConsumersHexagon(
+    prisma,
+    userReplicaHexagon.useCase,
+  );
+  await kafkaConsumersHexagon.consumerManager.start();
+
+  // 4. Create Express app
   const app = express();
   const port = config.port;
 
@@ -90,6 +100,7 @@ dotenvConfig();
   const shutdown = async () => {
     console.log('[server] Shutting down...');
     outboxRelay.stop();
+    await kafkaConsumersHexagon.consumerManager.stop();
     await kafkaProducer.disconnect();
     server.close();
     await prisma.$disconnect();

@@ -203,6 +203,28 @@ export class PrismaListingRepository implements IListingRepository {
     return result.count > 0;
   }
 
+  async markSoldByContractId(winningContractId: string): Promise<boolean> {
+    const result = await this.prisma.listing.updateMany({
+      where: {
+        winningContractId,
+        status: ListingStatus.LOCKED,
+      },
+      data: {
+        status: ListingStatus.SOLD,
+        updatedAt: new Date(),
+      },
+    });
+
+    return result.count > 0;
+  }
+
+  async getByContractId(winningContractId: string): Promise<Listing | null> {
+    const row = await this.prisma.listing.findFirst({
+      where: { winningContractId },
+    });
+    return row ? this.toDomain(row) : null;
+  }
+
   // ─── Mapping ──────────────────────────────────────────
 
   private toDomain(row: PrismaListing): Listing {

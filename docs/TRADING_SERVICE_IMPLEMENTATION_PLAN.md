@@ -568,11 +568,11 @@ Verify: `npx tsc --noEmit` passes
 Verify: `npx prisma studio` shows all tables
 
 ### Phase 3 — UserReplica Module
-- [ ] 3.1 Domain model + Zod schema
-- [ ] 3.2 IUserReplicaRepository port
-- [ ] 3.3 UserReplicaUseCase (upsert with profileVersion check)
-- [ ] 3.4 PrismaUserReplicaRepository
-- [ ] 3.5 Kafka consumer stub for USER_PROFILE_UPDATED
+- [x] 3.1 Domain model + Zod schema
+- [x] 3.2 IUserReplicaRepository port
+- [x] 3.3 UserReplicaUseCase (upsert with profileVersion check)
+- [x] 3.4 PrismaUserReplicaRepository
+- [x] 3.5 Kafka consumer stub for USER_PROFILE_UPDATED
 
 Verify: upsert with old profileVersion does not regress data
 
@@ -615,9 +615,9 @@ Verify: Offer created → outbox row → relay publishes to Kafka
 Verify: Two simultaneous calls → only one wins (409 for second); same key → idempotent result
 
 ### Phase 8 — Kafka Consumers
-- [ ] 8.1 DEPOSIT_PAID consumer → update offers.deposit_amount
-- [ ] 8.2 CONTRACT_STATUS_CHANGED consumer → SOLD if winningContractId matches
-- [ ] 8.3 USER_PROFILE_UPDATED consumer → replica upsert (Phase 3)
+- [x] 8.1 DEPOSIT_PAID consumer → update offers.deposit_amount
+- [x] 8.2 CONTRACT_STATUS_CHANGED consumer → SOLD if winningContractId matches
+- [x] 8.3 USER_PROFILE_UPDATED consumer → replica upsert (Phase 3)
 
 Verify: DEPOSIT_PAID updates amount; COMPLETED → SOLD; late event → no state change
 

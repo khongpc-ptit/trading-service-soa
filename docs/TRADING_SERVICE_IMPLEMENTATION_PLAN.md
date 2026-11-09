@@ -631,10 +631,12 @@ Verify: DEPOSIT_PAID updates amount; COMPLETED → SOLD; late event → no state
 Verify: Locked account blocked; wrong role rejected; expired token rejected
 
 ### Phase 10 — Docker and Integration
-- [ ] 10.1 Dockerfile
-- [ ] 10.2 Add to docker-compose.yml (port 8083, trading-db postgres, env vars)
-- [ ] 10.3 End-to-end smoke test: Listing → Offer → Accept → deposit-commit → LOCKED → COMPLETED → SOLD
-- [ ] 10.4 Confirm /internal/** not exposed through Gateway
+- [x] 10.1 Dockerfile (multi-stage Node 22-alpine build, Prisma generate, non-root user, EXPOSE 8083)
+- [x] 10.2 Add to docker-compose.yml (port 8083, trading-db postgres 16-alpine, env vars, healthchecks, soa-network)
+- [x] 10.3 End-to-end smoke test: Listing → Offer → Accept → deposit-commit → LOCKED → COMPLETED → SOLD
+- [x] 10.4 Confirm /internal/** not exposed through Gateway (X-Service-Key protection, 403 rejection, isolated mesh route)
+
+Verify: Dockerfile builds, docker-compose configuration valid, and all 11 steps of E2E integration test pass.
 
 ---
 

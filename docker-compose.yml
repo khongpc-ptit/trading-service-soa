@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  trading-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trading-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - DATABASE_URL=postgresql://trading_user:trading_pass@trading-db:5432/trading_db?schema=public
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JWT_PUBLIC_KEY_PATH=/app/keys/public.pem
+      - JWT_ISSUER=urn:soa:user-service
+      - JWT_AUDIENCE=soa-api
+      - USER_SERVICE_URL=http://user-service:8081
+      - FARMING_SERVICE_URL=http://farming-service:8082
+      - ACCESS_STATE_TIMEOUT_MS=1000
+      - SERVICE_KEY_PAYMENT=dev-payment-service-key
+      - SERVICE_KEY_TRADING_TO_FARMING=dev-trading-farming-service-key
+      - SERVICE_KEY_TRADING_TO_USER=dev-trading-user-service-key
+      - NODE_ENV=production
+    depends_on:
+      trading-db:
+        condition: service_healthy
+    networks:
+      - soa-network
+
+  trading-db:
+    image: postgres:16-alpine
+    container_name: trading-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trading_user
+      POSTGRES_PASSWORD: trading_pass
+      POSTGRES_DB: trading_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - trading_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trading_user -d trading_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - soa-network
+
+volumes:
+  trading_db_data:
+
+networks:
+  soa-network:
+    name: soa-network
+    driver: bridge
+

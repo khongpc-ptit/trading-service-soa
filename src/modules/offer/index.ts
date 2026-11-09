@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { ServiceContext } from "@share/interface/service-context";
 import { Router } from "express";
 import { PrismaListingRepository } from "@modules/listing/infras/repository/prisma";
+import { PrismaOutboxRepository } from "@share/outbox/repository";
+import { IOutboxRepository } from "@share/outbox/interface";
 import { PrismaOfferRepository } from "./infras/repository/prisma";
 import { OfferHTTPService, setupOfferRoutes } from "./infras/transport";
 import {
@@ -23,19 +25,23 @@ import {
 export const setupOfferHexagon = (
   prisma: PrismaClient,
   sctx: ServiceContext,
+  outboxRepository?: IOutboxRepository,
 ): Router => {
   // Infrastructure adapters
   const offerRepository = new PrismaOfferRepository(prisma);
   const listingRepository = new PrismaListingRepository(prisma);
+  const outboxRepo = outboxRepository ?? new PrismaOutboxRepository(prisma);
 
   // Command & Query handlers (following sample/brand)
   const createCmdHandler = new CreateOfferCmdHandler(
     offerRepository,
     listingRepository,
+    outboxRepo,
   );
   const acceptCmdHandler = new AcceptOfferCmdHandler(
     offerRepository,
     listingRepository,
+    outboxRepo,
   );
   const getDetailQueryHandler = new GetOfferDetailQueryHandler(
     offerRepository,

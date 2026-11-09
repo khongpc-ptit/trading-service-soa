@@ -1,5 +1,6 @@
 import { PagingDTO, PagingResponse } from "@share/model/paging";
 import { IListingRepository } from "@modules/listing/interface";
+import { IOutboxRepository } from "@share/outbox/interface";
 import {
   CreateOfferDTO,
   OfferCondDTO,
@@ -32,14 +33,17 @@ export class OfferUseCase implements IOfferUseCase {
   constructor(
     offerRepository: IOfferRepository,
     listingRepository: IListingRepository,
+    outboxRepository?: IOutboxRepository,
   ) {
     this.createCmdHandler = new CreateOfferCmdHandler(
       offerRepository,
       listingRepository,
+      outboxRepository,
     );
     this.acceptCmdHandler = new AcceptOfferCmdHandler(
       offerRepository,
       listingRepository,
+      outboxRepository,
     );
     this.getDetailQueryHandler = new GetOfferDetailQueryHandler(
       offerRepository,

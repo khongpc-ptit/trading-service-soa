@@ -18,8 +18,9 @@ import {
 export class PrismaOfferRepository implements IOfferRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async insert(offer: Offer): Promise<void> {
-    await this.prisma.offer.create({
+  async insert(offer: Offer, tx?: any): Promise<void> {
+    const db = tx ?? this.prisma;
+    await db.offer.create({
       data: {
         offerId: offer.offerId,
         listingId: offer.listingId,
@@ -43,8 +44,10 @@ export class PrismaOfferRepository implements IOfferRepository {
   async updateStatus(
     offerId: string,
     status: OfferStatus,
+    tx?: any,
   ): Promise<boolean> {
-    const result = await this.prisma.offer.updateMany({
+    const db = tx ?? this.prisma;
+    const result = await db.offer.updateMany({
       where: { offerId },
       data: {
         status: status as PrismaOfferStatus,
@@ -58,8 +61,10 @@ export class PrismaOfferRepository implements IOfferRepository {
   async updateDepositAmount(
     offerId: string,
     depositAmount: string,
+    tx?: any,
   ): Promise<boolean> {
-    const result = await this.prisma.offer.updateMany({
+    const db = tx ?? this.prisma;
+    const result = await db.offer.updateMany({
       where: { offerId },
       data: {
         depositAmount,
@@ -68,6 +73,10 @@ export class PrismaOfferRepository implements IOfferRepository {
     });
 
     return result.count > 0;
+  }
+
+  async runTransaction<T>(work: (tx: any) => Promise<T>): Promise<T> {
+    return await this.prisma.$transaction(work);
   }
 
   async list(

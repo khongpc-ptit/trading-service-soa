@@ -10,14 +10,15 @@ import {
 // ─── Repository Port ────────────────────────────────────
 
 export interface IOfferRepository {
-  insert(offer: Offer): Promise<void>;
+  insert(offer: Offer, tx?: any): Promise<void>;
   getById(offerId: string): Promise<Offer | null>;
-  updateStatus(offerId: string, status: OfferStatus): Promise<boolean>;
-  updateDepositAmount(offerId: string, depositAmount: string): Promise<boolean>;
+  updateStatus(offerId: string, status: OfferStatus, tx?: any): Promise<boolean>;
+  updateDepositAmount(offerId: string, depositAmount: string, tx?: any): Promise<boolean>;
   list(
     cond: OfferCondDTO,
     paging: PagingDTO,
   ): Promise<{ items: Offer[]; total: number }>;
+  runTransaction<T>(work: (tx: any) => Promise<T>): Promise<T>;
 }
 
 // ─── CQRS Command & Query Shapes ────────────────────────

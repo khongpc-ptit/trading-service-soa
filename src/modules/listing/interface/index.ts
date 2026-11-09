@@ -34,6 +34,8 @@ export interface IListingRepository {
 
   /** Kafka consumer: set listing SOLD if winningContractId matches. */
   markSold(listingId: string, winningContractId: string): Promise<boolean>;
+  markSoldByContractId?(winningContractId: string): Promise<boolean>;
+  getByContractId?(winningContractId: string): Promise<Listing | null>;
 }
 
 // ─── Farming RPC Port ───────────────────────────────────

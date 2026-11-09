@@ -1,13 +1,25 @@
 import { v7 } from "uuid";
 
-// ─── Topics (BA-SOA §8, §10) ────────────────────────────
+// ─── Topics (BA-SOA §8, §9, §10) ─────────────────────────
 
 export const TOPIC_TRADING_OFFER = "soa.trading.offer.v1";
+export const TOPIC_CONTRACT_LIFECYCLE = "soa.contract.lifecycle.v1";
+export const TOPIC_PAYMENT_DEPOSIT = "soa.payment.deposit.v1";
+export const TOPIC_USER_PROFILE = "soa.user.profile.v1";
+
+// ─── Consumer Groups (BA-SOA §8, §9) ─────────────────────
+
+export const GROUP_TRADING_CONTRACT = "trading-contract-v1";
+export const GROUP_TRADING_DEPOSIT = "trading-deposit-v1";
+export const GROUP_TRADING_USER_PROFILE = "trading-user-profile-v1";
 
 // ─── Event Types ────────────────────────────────────────
 
 export const EVENT_OFFER_CREATED = "OFFER_CREATED";
 export const EVENT_OFFER_ACCEPTED = "OFFER_ACCEPTED";
+export const EVENT_CONTRACT_STATUS_CHANGED = "CONTRACT_STATUS_CHANGED";
+export const EVENT_DEPOSIT_PAID = "DEPOSIT_PAID";
+export const EVENT_USER_PROFILE_UPDATED = "USER_PROFILE_UPDATED";
 
 // ─── Approved Event Envelope (BA-SOA §8 & §10) ──────────
 
@@ -45,6 +57,42 @@ export interface OfferAcceptedEventData {
   depositAmount: string;
   status: string;
   updatedAt: string;
+}
+
+// ─── Inbound Consumer Payloads (BA-SOA §8, §9) ──────────
+
+export interface ContractStatusChangedEventData {
+  contractId: string;
+  farmerId?: string;
+  traderId?: string;
+  previousStatus?: string;
+  status: string; // e.g. "COMPLETED"
+  stateVersion?: number;
+}
+
+export interface DepositPaidEventData {
+  depositId: string;
+  paymentId?: string;
+  contractId: string;
+  farmerId?: string;
+  traderId?: string;
+  amount: string | number;
+  currency?: string;
+  offerId?: string;
+}
+
+export interface UserProfileUpdatedEventData {
+  accountId: string;
+  role: string;
+  profileVersion: number | string | bigint;
+  publicVisible: boolean;
+  profile: {
+    displayName: string;
+    avatarUrl?: string | null;
+    province?: string | null;
+    district?: string | null;
+    joinedAt: string;
+  };
 }
 
 // ─── Factory Helpers ────────────────────────────────────

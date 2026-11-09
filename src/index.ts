@@ -11,6 +11,7 @@ import { setupMiddlewares } from '@share/middleware';
 import { TokenIntrospectRPCClient } from '@share/repository/verify-token.rpc';
 import { ServiceContext } from '@share/interface/service-context';
 import { setupListingHexagon } from '@modules/listing';
+import { setupOfferHexagon } from '@modules/offer';
 
 dotenvConfig();
 
@@ -44,8 +45,8 @@ dotenvConfig();
 
   // 5. Mount module hexagons
   app.use('/api/v1', setupListingHexagon(prisma, sctx));
+  app.use('/api/v1', setupOfferHexagon(prisma, sctx));
 
-  // TODO (Phase 5): app.use('/api/v1', setupOfferHexagon(prisma, sctx));
   // TODO (Phase 7): app.use('/internal/v1', setupInternalRoutes(prisma, sctx));
 
   // 6. Global error handler (same pattern as sample)

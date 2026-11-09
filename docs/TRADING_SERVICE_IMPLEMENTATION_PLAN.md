@@ -551,19 +551,19 @@ This requires adding a `code` field to `AppError` and updating `responseErr` to 
 ## 9. Ordered Implementation Checklist
 
 ### Phase 1 — Project Bootstrap
-- [ ] 1.1 Init package.json (Express 5, Prisma, zod, axios, kafkajs, uuid, jsonwebtoken, morgan, dotenv)
-- [ ] 1.2 Configure tsconfig.json with path aliases @share/*, @modules/*
-- [ ] 1.3 Create .env.example with all variable names (no secrets)
-- [ ] 1.4 Copy/adapt share/ files per mapping table in §4
+- [x] 1.1 Init package.json (Express 5, Prisma, zod, axios, kafkajs, uuid, jsonwebtoken, morgan, dotenv)
+- [x] 1.2 Configure tsconfig.json with path aliases @share/*, @modules/*
+- [x] 1.3 Create .env.example with all variable names (no secrets)
+- [x] 1.4 Copy/adapt share/ files per mapping table in §4
 
 Verify: `npx tsc --noEmit` passes
 
 ### Phase 2 — Database Schema
-- [ ] 2.1 `npx prisma init`
-- [ ] 2.2 Write prisma/schema.prisma (all models + enums from §6)
+- [x] 2.1 `npx prisma init`
+- [x] 2.2 Write prisma/schema.prisma (all models + enums from §6)
 - [ ] 2.3 `npx prisma migrate dev --name init`
-- [ ] 2.4 `npx prisma generate`
-- [ ] 2.5 Create share/component/prisma.ts singleton
+- [x] 2.4 `npx prisma generate`
+- [x] 2.5 Create share/component/prisma.ts singleton
 
 Verify: `npx prisma studio` shows all tables
 
@@ -577,23 +577,23 @@ Verify: `npx prisma studio` shows all tables
 Verify: upsert with old profileVersion does not regress data
 
 ### Phase 4 — Listing Module
-- [ ] 4.1 Domain model, schemas, sentinel errors
-- [ ] 4.2 IListingRepository, IListingUseCase, IFarmingRpc ports
-- [ ] 4.3 FarmingRpcClient (axios, service key, 1s timeout)
-- [ ] 4.4 ListingUseCase.createListing (snapshot validation + DB insert)
-- [ ] 4.5 PrismaListingRepository (insert, getById, list, count)
-- [ ] 4.6 ListingHTTPService (POST, GET list, GET detail)
-- [ ] 4.7 Wire setupListingHexagon in index.ts
+- [x] 4.1 Domain model, schemas, sentinel errors
+- [x] 4.2 IListingRepository, IListingUseCase, IFarmingRpc ports
+- [x] 4.3 FarmingRpcClient (axios, service key, 1s timeout)
+- [x] 4.4 ListingUseCase.createListing (snapshot validation + DB insert)
+- [x] 4.5 PrismaListingRepository (insert, getById, list, count)
+- [x] 4.6 ListingHTTPService (POST, GET list, GET detail)
+- [x] 4.7 Wire setupListingHexagon in index.ts
 
 Verify: POST creates Listing; Farming unreachable → 503
 
 ### Phase 5 — Offer Module
-- [ ] 5.1 Domain model, schemas, sentinel errors
-- [ ] 5.2 IOfferRepository, IOfferUseCase ports
-- [ ] 5.3 OfferUseCase.createOffer + acceptOffer
-- [ ] 5.4 PrismaOfferRepository
-- [ ] 5.5 OfferHTTPService (POST offer, POST accept, GET offer)
-- [ ] 5.6 Wire setupOfferHexagon in index.ts
+- [x] 5.1 Domain model, schemas, sentinel errors
+- [x] 5.2 IOfferRepository, IOfferUseCase ports
+- [x] 5.3 OfferUseCase.createOffer + acceptOffer
+- [x] 5.4 PrismaOfferRepository
+- [x] 5.5 OfferHTTPService (POST offer, POST accept, GET offer)
+- [x] 5.6 Wire setupOfferHexagon in index.ts
 
 Verify: Trader creates Offer; Farmer accepts; status transitions correct
 

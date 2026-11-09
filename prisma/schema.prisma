@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────
+
+enum ListingStatus {
+  OPEN
+  LOCKED
+  SOLD
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+}
+
+// ─── Listing ──────────────────────────────────────────────
+
+model Listing {
+  listingId                String        @id @default(uuid()) @map("listing_id") @db.Uuid
+  farmerId                 String        @map("farmer_id") @db.Uuid
+  plotId                   String        @map("plot_id") @db.Uuid
+  cropSeasonId             String        @map("crop_season_id") @db.Uuid
+  seedType                 String        @map("seed_type") @db.VarChar(100)
+  estimatedYield           Decimal       @map("estimated_yield") @db.Decimal(12, 2)
+  area                     Decimal       @db.Decimal(12, 2)
+  latitude                 Decimal       @db.Decimal(9, 6)
+  longitude                Decimal       @db.Decimal(9, 6)
+  expectedPrice            Decimal       @map("expected_price") @db.Decimal(18, 2)
+  status                   ListingStatus @default(OPEN)
+  winningContractId        String?       @map("winning_contract_id") @db.Uuid
+  winningPaymentTrackingId String?       @map("winning_payment_tracking_id") @db.Uuid
+  createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  offers Offer[]
+
+  @@map("listings")
+}
+
+// ─── Offer ────────────────────────────────────────────────
+
+model Offer {
+  offerId       String      @id @default(uuid()) @map("offer_id") @db.Uuid
+  listingId     String      @map("listing_id") @db.Uuid
+  farmerId      String      @map("farmer_id") @db.Uuid
+  traderId      String      @map("trader_id") @db.Uuid
+  depositAmount Decimal     @default(0) @map("deposit_amount") @db.Decimal(18, 2)
+  status        OfferStatus @default(PENDING)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [listingId])
+
+  @@map("offers")
+}
+
+// ─── User Replicas ────────────────────────────────────────
+
+model FarmerReplica {
+  accountId      String   @id @map("account_id") @db.Uuid
+  displayName    String   @map("display_name") @db.VarChar(255)
+  avatarUrl      String?  @map("avatar_url")
+  province       String?  @db.VarChar(100)
+  district       String?  @db.VarChar(100)
+  joinedAt       DateTime @map("joined_at") @db.Timestamptz(6)
+  profileVersion BigInt   @default(0) @map("profile_version")
+  publicVisible  Boolean  @default(true) @map("public_visible")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("farmer_replicas")
+}
+
+model TraderReplica {
+  accountId      String   @id @map("account_id") @db.Uuid
+  displayName    String   @map("display_name") @db.VarChar(255)
+  avatarUrl      String?  @map("avatar_url")
+  province       String?  @db.VarChar(100)
+  district       String?  @db.VarChar(100)
+  joinedAt       DateTime @map("joined_at") @db.Timestamptz(6)
+  profileVersion BigInt   @default(0) @map("profile_version")
+  publicVisible  Boolean  @default(true) @map("public_visible")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("trader_replicas")
+}
+
+// ─── Transactional Outbox (BA-SOA §10) ───────────────────
+
+model OutboxEvent {
+  eventId      String    @id @map("event_id") @db.Uuid
+  eventType    String    @map("event_type") @db.VarChar(100)
+  topic        String    @db.VarChar(255)
+  partitionKey String    @map("partition_key") @db.VarChar(255)
+  payload      Json
+  publishedAt  DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([publishedAt])
+  @@map("outbox_events")
+}
